@@ -25,3 +25,7 @@ Visualize your [Howm](https://github.com/kaorahi/howm) notes as a graph.
 ## Generate a Graph
 
 ```M-x howm-graph-view```
+
+## Important Note
+
+- Works only on .txt format

@@ -1,4 +1,4 @@
-# Howm Graph Viewer
+# Howm Graph 
 
 Visualize your [Howm](https://github.com/kaorahi/howm) notes as an interactive, web-based graph using Emacs and D3.js.
 

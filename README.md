@@ -1,8 +1,5 @@
 # Howm Graph 
 
-<img width="1000" height="531" alt="14" src="https://github.com/user-attachments/assets/6818f20a-82f7-4415-bf7d-8c08e1b3d3d5" />
-
-
 Visualize your [Howm](https://github.com/kaorahi/howm) notes as a graph.
 
 - Interactive graph of Howm notes.
@@ -10,6 +7,8 @@ Visualize your [Howm](https://github.com/kaorahi/howm) notes as a graph.
 - Lightweight, minimal, and self-contained.
 - Node sizes and clustering reflect the number of connections.
 - Works fully offline after initial setup.
+
+<img width="900" height="556" alt="14" src="https://github.com/user-attachments/assets/458897dd-8059-481f-9e42-a68b51d4f2e7" />
 
 ## Installation
 

@@ -2,7 +2,7 @@
 
 Visualize your [Howm](https://github.com/kaorahi/howm) notes as a graph.
 
-- Interactive graph of Howm notes and keywords.
+- Interactive graph of Howm notes.
 - Links automatically created from `>>>keyword` references.
 - Lightweight, minimal, and self-contained.
 - Node sizes and clustering reflect the number of connections.

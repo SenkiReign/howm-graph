@@ -2,8 +2,6 @@
 
 Visualize your [Howm](https://github.com/kaorahi/howm) notes as an interactive, web-based graph using Emacs and D3.js.
 
-## Features
-
 - Interactive graph of Howm notes and keywords.
 - Links automatically created from `>>>keyword` references.
 - Lightweight, minimal, and self-contained.

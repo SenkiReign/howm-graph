@@ -147,8 +147,10 @@
 <script>D3_SCRIPT_PLACEHOLDER</script>
 <style>
 body { margin: 0; display: flex; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; height: 100vh; overflow: hidden; background: #fafafa; }
-#graph { flex: 3; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); }
-#sidebar { flex: 1; border-left: 1px solid #ddd; padding: 20px; overflow-y: auto; background: white; box-shadow: -2px 0 8px rgba(0,0,0,0.05); }
+#graph { flex: 1; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); position: relative; }
+#sidebar { width: 300px; min-width: 200px; max-width: 600px; border-left: 1px solid #ddd; padding: 20px; overflow-y: auto; background: white; box-shadow: -2px 0 8px rgba(0,0,0,0.05); position: relative; }
+#resizer { position: absolute; left: 0; top: 0; bottom: 0; width: 5px; cursor: ew-resize; background: transparent; z-index: 10; }
+#resizer:hover { background: #4a90e2; }
 h2 { margin-top: 0; font-size: 1.2em; color: #333; border-bottom: 2px solid #4a90e2; padding-bottom: 8px; }
 h3 { margin-top: 0.5em; margin-bottom: 0.5em; color: #2c3e50; font-size: 1.1em; }
 .link { stroke-opacity: 0.4; }
@@ -180,9 +182,11 @@ body.dark #darkmode-toggle:hover { background: #30363d; }
 <body>
 <div id=\"graph\"></div>
 <div id=\"sidebar\">
+  <div id=\"resizer\"></div>
   <h2>Graph Stats</h2>
   <div id=\"stats\"></div>
   <button id=\"darkmode-toggle\">Toggle Dark Mode</button>
+  <button id=\"orphan-toggle\" style=\"margin: 10px 0; padding: 10px 20px; background: #95a5a6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9em; width: 100%;\">Hide Orphans</button>
   <h2>Search</h2>
   <input type=\"text\" id=\"search\" placeholder=\"Search nodes...\" style=\"width: 100%; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.85em; margin-bottom: 8px;\">
   <div id=\"search-results\" style=\"font-size: 0.8em; color: #666; margin-bottom: 10px;\"></div>
@@ -191,10 +195,26 @@ body.dark #darkmode-toggle:hover { background: #30363d; }
 </div>
 <script>
 const graph = GRAPH_DATA_HERE;
-const width = window.innerWidth * 0.75;
-const height = window.innerHeight;
+let width = window.innerWidth - 300;
+let height = window.innerHeight;
 const svg = d3.select(\"#graph\").append(\"svg\").attr(\"width\", width).attr(\"height\", height);
 const container = svg.append(\"g\");
+const resizer = document.getElementById(\"resizer\");
+const sidebar = document.getElementById(\"sidebar\");
+let isResizing = false;
+resizer.addEventListener(\"mousedown\", (e) => { isResizing = true; });
+document.addEventListener(\"mousemove\", (e) => {
+  if (!isResizing) return;
+  const newWidth = window.innerWidth - e.clientX;
+  if (newWidth >= 200 && newWidth <= 600) {
+    sidebar.style.width = newWidth + \"px\";
+    width = window.innerWidth - newWidth;
+    svg.attr(\"width\", width);
+    simulation.force(\"center\", d3.forceCenter(width/2, height/2));
+    simulation.alpha(0.3).restart();
+  }
+});
+document.addEventListener(\"mouseup\", () => { isResizing = false; });
 graph.nodes.forEach(n => n.degree = 0);
 graph.links.forEach(l => {
   const s = typeof l.source === \"object\" ? l.source.id : l.source;
@@ -232,6 +252,14 @@ svg.call(d3.zoom().scaleExtent([0.2, 4]).on(\"zoom\", (event) => container.attr(
 document.getElementById(\"darkmode-toggle\").addEventListener(\"click\", () => {
   document.body.classList.toggle(\"dark\");
   labels.attr(\"fill\", d => document.body.classList.contains(\"dark\") ? \"#e6edf3\" : \"#2c3e50\");
+});
+let orphansHidden = false;
+document.getElementById(\"orphan-toggle\").addEventListener(\"click\", function() {
+  orphansHidden = !orphansHidden;
+  this.textContent = orphansHidden ? \"Show Orphans\" : \"Hide Orphans\";
+  this.style.background = orphansHidden ? \"#e74c3c\" : \"#95a5a6\";
+  node.attr(\"opacity\", d => (orphansHidden && d.degree === 0) ? 0 : 1);
+  labels.attr(\"opacity\", d => (orphansHidden && d.degree === 0) ? 0 : 1);
 });
 document.getElementById(\"search\").addEventListener(\"input\", (e) => {
   const query = e.target.value.toLowerCase().trim();

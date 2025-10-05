@@ -5,7 +5,7 @@ Visualize your [Howm](https://github.com/kaorahi/howm) notes as a graph.
 - Interactive graph of Howm notes.
 - Links automatically created from `>>>keyword` references.
 - Lightweight, minimal, and self-contained.
-- Node sizes and clustering reflect the number of connections.
+- Clustering reflect the number of connections.
 - Works fully offline after initial setup.
 
 <img width="900" height="556" alt="14" src="https://github.com/user-attachments/assets/458897dd-8059-481f-9e42-a68b51d4f2e7" />

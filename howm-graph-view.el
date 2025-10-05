@@ -1,7 +1,4 @@
 ;;; howm-graph-view.el --- Graph visualization for Howm notes -*- lexical-binding: t; -*-
-
-;; Copyright (C) 2025
-;; Author: Your Name
 ;; Version: 1.0
 ;; Package-Requires: ((emacs "26.1"))
 ;; Keywords: howm, graph, visualization

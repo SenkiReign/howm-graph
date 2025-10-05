@@ -1,15 +1,13 @@
 ;;; howm-graph-view.el --- Graph visualization for Howm notes -*- lexical-binding: t; -*-
-
-;; Copyright (C) 2025
-;; Author: Your Name
-;; Version: 1.0
-;; Package-Requires: ((emacs "26.1"))
-;; Keywords: howm, graph, visualization
-
-;;; Commentary:
-;; Graph visualization for Howm notes.
-
 ;;; Code:
+
+(setq coding-system-for-read 'utf-8
+      coding-system-for-write 'utf-8
+      default-buffer-file-coding-system 'utf-8
+      locale-coding-system 'utf-8
+      selection-coding-system 'utf-8
+      inhibit-eol-conversion t)
+
 
 (require 'json)
 (require 'url)

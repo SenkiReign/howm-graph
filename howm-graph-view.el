@@ -1,4 +1,7 @@
 ;;; howm-graph-view.el --- Graph visualization for Howm notes -*- lexical-binding: t; -*-
+
+;; Copyright (C) 2025
+;; Author: Your Name
 ;; Version: 1.0
 ;; Package-Requires: ((emacs "26.1"))
 ;; Keywords: howm, graph, visualization
@@ -8,18 +11,8 @@
 
 ;;; Code:
 
-(setq coding-system-for-read 'utf-8
-      coding-system-for-write 'utf-8
-      default-buffer-file-coding-system 'utf-8
-      locale-coding-system 'utf-8
-      selection-coding-system 'utf-8
-      inhibit-eol-conversion t)
-
-
-
 (require 'json)
 (require 'url)
-
 
 (defgroup howm-graph nil
   "Graph visualization for Howm notes."
@@ -51,6 +44,7 @@
         (keyword-counter 0)
         (files (directory-files howm-graph-notes-directory t "\\.txt\\'")))
     
+    ;; First pass: create all note nodes and index them by heading
     (dolist (file files)
       (let* ((fname (file-name-nondirectory file))
              (content (with-temp-buffer
@@ -68,41 +62,60 @@
                              (string-trim (mapconcat 'identity (cdr lines) "\n")))))
                 
                 (when heading
-                  (let ((note-id (format "note%d" note-counter))
-                        (note-key (concat heading "__" fname)))
+                  (let* ((clean-heading (replace-regexp-in-string ">>>\\s-*[[:alnum:]-]+" "" heading))
+                         (note-id (format "note%d" note-counter))
+                         (note-key (concat heading "__" fname)))
                     
                     (push (list (cons 'id note-id)
-                                (cons 'heading (replace-regexp-in-string ">>>\\s-*[[:alnum:]-]+" "" heading))
+                                (cons 'heading clean-heading)
+                                (cons 'original-heading heading)
                                 (cons 'content (or body ""))
                                 (cons 'file fname)
                                 (cons 'type "note")
                                 (cons 'color "#1f77b4"))
                           nodes)
                     
+                    ;; Index by both original and clean heading for lookup
                     (puthash note-key note-id note-ids)
-                    (setq note-counter (1+ note-counter))
-                    
-                    (let ((text (concat heading "\n" (or body ""))))
-                      (with-temp-buffer
-                        (insert text)
-                        (goto-char (point-min))
-                        (while (re-search-forward ">>>\\s-*\\([[:alnum:]-]+\\)" nil t)
-                          (let ((kw (match-string 1)))
-                            (unless (gethash kw keyword-ids)
-                              (let ((kw-id (format "kw%d" keyword-counter)))
-                                (push (list (cons 'id kw-id)
-                                            (cons 'heading kw)
-                                            (cons 'content "")
-                                            (cons 'file "")
-                                            (cons 'type "keyword")
-                                            (cons 'color "#ff7f0e"))
-                                      nodes)
-                                (puthash kw kw-id keyword-ids)
-                                (setq keyword-counter (1+ keyword-counter))))
-                            
-                            (push (list (cons 'source note-id)
-                                        (cons 'target (gethash kw keyword-ids)))
-                                  links)))))))))))))
+                    (puthash (string-trim clean-heading) note-id note-ids)
+                    (setq note-counter (1+ note-counter))))))))))
+    
+    ;; Second pass: create links
+    (dolist (node nodes)
+      (let* ((note-id (cdr (assoc 'id node)))
+             (heading (cdr (assoc 'original-heading node)))
+             (body (cdr (assoc 'content node)))
+             (text (concat heading "\n" (or body ""))))
+        
+        (with-temp-buffer
+          (insert text)
+          (goto-char (point-min))
+          (while (re-search-forward ">>>\\s-*\\([[:alnum:]-]+\\)" nil t)
+            (let* ((kw (match-string 1))
+                   (target-note-id (gethash (string-trim kw) note-ids)))
+              
+              (if target-note-id
+                  ;; Link to existing note
+                  (push (list (cons 'source note-id)
+                              (cons 'target target-note-id))
+                        links)
+                ;; Create keyword node if doesn't exist
+                (progn
+                  (unless (gethash kw keyword-ids)
+                    (let ((kw-id (format "kw%d" keyword-counter)))
+                      (push (list (cons 'id kw-id)
+                                  (cons 'heading kw)
+                                  (cons 'content "")
+                                  (cons 'file "")
+                                  (cons 'type "keyword")
+                                  (cons 'color "#ff7f0e"))
+                            nodes)
+                      (puthash kw kw-id keyword-ids)
+                      (setq keyword-counter (1+ keyword-counter))))
+                  ;; Link to keyword
+                  (push (list (cons 'source note-id)
+                              (cons 'target (gethash kw keyword-ids)))
+                        links))))))))
     
     (list :nodes (nreverse nodes) :links (nreverse links))))
 
@@ -225,11 +238,6 @@ function drag(simulation) {
     (message "Generated %s with %d nodes and %d links"
              howm-graph-output-file num-nodes num-links)
     howm-graph-output-file))
-
-
-
-
-
 
 ;;;###autoload
 (defun howm-graph-debug ()

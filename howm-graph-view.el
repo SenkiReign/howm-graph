@@ -1,4 +1,8 @@
 ;;; howm-graph-view.el --- Graph visualization for Howm notes -*- lexical-binding: t; -*-
+
+;;; Commentary:
+;; Graph visualization for Howm notes.
+
 ;;; Code:
 
 (setq coding-system-for-read 'utf-8
@@ -7,7 +11,6 @@
       locale-coding-system 'utf-8
       selection-coding-system 'utf-8
       inhibit-eol-conversion t)
-
 
 (require 'json)
 (require 'url)
@@ -143,14 +146,35 @@
 <title>Howm Graph</title>
 <script>D3_SCRIPT_PLACEHOLDER</script>
 <style>
-body { margin: 0; display: flex; font-family: sans-serif; height: 100vh; overflow: hidden; }
-#graph { flex: 3; }
-#sidebar { flex: 1; border-left: 1px solid #ccc; padding: 10px; overflow-y: auto; }
-h2, h3 { margin-top: 0.5em; margin-bottom: 0.3em; }
-.link { stroke-opacity: 0.6; }
-#darkmode-toggle { margin: 10px 0; }
-body.dark { background: #121212; color: #eee; }
-body.dark #sidebar { background: #1e1e1e; color: #eee; }
+body { margin: 0; display: flex; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; height: 100vh; overflow: hidden; background: #fafafa; }
+#graph { flex: 3; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); }
+#sidebar { flex: 1; border-left: 1px solid #ddd; padding: 20px; overflow-y: auto; background: white; box-shadow: -2px 0 8px rgba(0,0,0,0.05); }
+h2 { margin-top: 0; font-size: 1.2em; color: #333; border-bottom: 2px solid #4a90e2; padding-bottom: 8px; }
+h3 { margin-top: 0.5em; margin-bottom: 0.5em; color: #2c3e50; font-size: 1.1em; }
+.link { stroke-opacity: 0.4; }
+#darkmode-toggle { 
+  margin: 15px 0; 
+  padding: 10px 20px; 
+  background: #4a90e2; 
+  color: white; 
+  border: none; 
+  border-radius: 6px; 
+  cursor: pointer; 
+  font-size: 0.9em;
+  transition: background 0.3s;
+}
+#darkmode-toggle:hover { background: #357abd; }
+#stats { color: #666; line-height: 1.8; }
+#details { margin-top: 15px; padding: 15px; background: #f9f9f9; border-radius: 8px; border-left: 4px solid #4a90e2; }
+body.dark { background: #0d1117; color: #c9d1d9; }
+body.dark #graph { background: linear-gradient(135deg, #161b22 0%, #0d1117 100%); }
+body.dark #sidebar { background: #161b22; border-left-color: #30363d; box-shadow: -2px 0 8px rgba(0,0,0,0.3); }
+body.dark h2 { color: #c9d1d9; border-bottom-color: #58a6ff; }
+body.dark h3 { color: #e6edf3; }
+body.dark #stats { color: #8b949e; }
+body.dark #details { background: #0d1117; border-left-color: #58a6ff; }
+body.dark #darkmode-toggle { background: #21262d; color: #c9d1d9; }
+body.dark #darkmode-toggle:hover { background: #30363d; }
 </style>
 </head>
 <body>
@@ -159,6 +183,9 @@ body.dark #sidebar { background: #1e1e1e; color: #eee; }
   <h2>Graph Stats</h2>
   <div id=\"stats\"></div>
   <button id=\"darkmode-toggle\">Toggle Dark Mode</button>
+  <h2>Search</h2>
+  <input type=\"text\" id=\"search\" placeholder=\"Search nodes...\" style=\"width: 100%; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.85em; margin-bottom: 8px;\">
+  <div id=\"search-results\" style=\"font-size: 0.8em; color: #666; margin-bottom: 10px;\"></div>
   <h2>Details</h2>
   <div id=\"details\">Click a node</div>
 </div>
@@ -184,13 +211,18 @@ const simulation = d3.forceSimulation(graph.nodes)
   .force(\"collide\", d3.forceCollide(d => d.type === \"keyword\" ? 20 : 18))
   .force(\"x\", d3.forceX(width/2).strength(0.05))
   .force(\"y\", d3.forceY(height/2).strength(0.05));
-const link = container.append(\"g\").attr(\"class\",\"link\").selectAll(\"line\").data(graph.links).join(\"line\").attr(\"stroke-width\", 1).attr(\"stroke\", d => {
+const link = container.append(\"g\").attr(\"class\",\"link\").selectAll(\"line\").data(graph.links).join(\"line\").attr(\"stroke-width\", d => {
   const sourceNode = graph.nodes.find(n => n.id === (d.source.id || d.source));
   const targetNode = graph.nodes.find(n => n.id === (d.target.id || d.target));
-  return (sourceNode.type === \"note\" && targetNode.type === \"keyword\") ? \"#ff7f0e\" : \"#999\";
+  return (sourceNode.type === \"note\" && targetNode.type === \"note\") ? 2 : 1.5;
+}).attr(\"stroke\", d => {
+  const sourceNode = graph.nodes.find(n => n.id === (d.source.id || d.source));
+  const targetNode = graph.nodes.find(n => n.id === (d.target.id || d.target));
+  if (sourceNode.type === \"note\" && targetNode.type === \"note\") return \"#4a90e2\";
+  return (sourceNode.type === \"note\" && targetNode.type === \"keyword\") ? \"#f39c12\" : \"#95a5a6\";
 });
-const node = container.append(\"g\").attr(\"stroke\", \"#fff\").attr(\"stroke-width\", 1.5).selectAll(\"circle\").data(graph.nodes).join(\"circle\").attr(\"r\", d => d.type === \"keyword\" ? 8 : 6).attr(\"fill\", d => d.color).call(drag(simulation)).on(\"click\", showDetails);
-const labels = container.append(\"g\").selectAll(\"text\").data(graph.nodes).join(\"text\").text(d => d.heading.replace(/>>>[\w-]+/g, \"\").trim()).attr(\"font-size\", \"10px\").attr(\"text-anchor\", \"middle\").attr(\"dy\", \"-10px\").attr(\"pointer-events\", \"none\").attr(\"fill\", d => document.body.classList.contains(\"dark\") ? \"#eee\" : \"#000\");
+const node = container.append(\"g\").attr(\"stroke\", \"rgba(255,255,255,0.8)\").attr(\"stroke-width\", 1.5).selectAll(\"circle\").data(graph.nodes).join(\"circle\").attr(\"r\", d => d.type === \"keyword\" ? 10 : 8).attr(\"fill\", d => d.type === \"keyword\" ? \"#f39c12\" : \"#4a90e2\").style(\"cursor\", \"pointer\").call(drag(simulation)).on(\"click\", showDetails).on(\"mouseover\", function() { d3.select(this).attr(\"r\", d => (d.type === \"keyword\" ? 10 : 8) * 1.3); }).on(\"mouseout\", function() { d3.select(this).attr(\"r\", d => d.type === \"keyword\" ? 10 : 8); });
+const labels = container.append(\"g\").selectAll(\"text\").data(graph.nodes).join(\"text\").text(d => d.heading.replace(/>>>[\w-]+/g, \"\").trim()).attr(\"font-size\", \"11px\").attr(\"font-weight\", \"500\").attr(\"text-anchor\", \"middle\").attr(\"dy\", \"-12px\").attr(\"pointer-events\", \"none\").attr(\"fill\", d => document.body.classList.contains(\"dark\") ? \"#e6edf3\" : \"#2c3e50\");
 simulation.on(\"tick\", () => {
   link.attr(\"x1\", d => d.source.x).attr(\"y1\", d => d.source.y).attr(\"x2\", d => d.target.x).attr(\"y2\", d => d.target.y);
   node.attr(\"cx\", d => d.x).attr(\"cy\", d => d.y);
@@ -199,7 +231,35 @@ simulation.on(\"tick\", () => {
 svg.call(d3.zoom().scaleExtent([0.2, 4]).on(\"zoom\", (event) => container.attr(\"transform\", event.transform)));
 document.getElementById(\"darkmode-toggle\").addEventListener(\"click\", () => {
   document.body.classList.toggle(\"dark\");
-  labels.attr(\"fill\", d => document.body.classList.contains(\"dark\") ? \"#eee\" : \"#000\");
+  labels.attr(\"fill\", d => document.body.classList.contains(\"dark\") ? \"#e6edf3\" : \"#2c3e50\");
+});
+document.getElementById(\"search\").addEventListener(\"input\", (e) => {
+  const query = e.target.value.toLowerCase().trim();
+  if (query === \"\") {
+    node.attr(\"opacity\", 1).attr(\"r\", d => d.type === \"keyword\" ? 10 : 8);
+    link.attr(\"opacity\", 0.4);
+    labels.attr(\"opacity\", 1);
+    document.getElementById(\"search-results\").innerHTML = \"\";
+    return;
+  }
+  const matches = graph.nodes.filter(n => n.heading.toLowerCase().includes(query));
+  const matchIds = new Set(matches.map(n => n.id));
+  const connectedIds = new Set();
+  graph.links.forEach(l => {
+    const sourceId = l.source.id || l.source;
+    const targetId = l.target.id || l.target;
+    if (matchIds.has(sourceId)) connectedIds.add(targetId);
+    if (matchIds.has(targetId)) connectedIds.add(sourceId);
+  });
+  node.attr(\"opacity\", d => matchIds.has(d.id) ? 1 : (connectedIds.has(d.id) ? 0.5 : 0.1))
+      .attr(\"r\", d => matchIds.has(d.id) ? (d.type === \"keyword\" ? 12 : 10) : (d.type === \"keyword\" ? 10 : 8));
+  link.attr(\"opacity\", l => {
+    const sourceId = l.source.id || l.source;
+    const targetId = l.target.id || l.target;
+    return (matchIds.has(sourceId) || matchIds.has(targetId)) ? 0.6 : 0.05;
+  });
+  labels.attr(\"opacity\", d => matchIds.has(d.id) ? 1 : (connectedIds.has(d.id) ? 0.6 : 0.2));
+  document.getElementById(\"search-results\").innerHTML = `Found ${matches.length} node(s)`;
 });
 function showDetails(event, d) {
   document.getElementById(\"details\").innerHTML = `<h3>${d.heading.replace(/>>>[\w-]+/g, \"\").trim()}</h3><div style=\"white-space: pre-wrap; word-wrap: break-word;\">${d.content}</div><p><em>${d.file}</em></p>`;

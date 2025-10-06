@@ -147,16 +147,17 @@
 <script>D3_SCRIPT_PLACEHOLDER</script>
 <style>
 body { margin: 0; display: flex; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; height: 100vh; overflow: hidden; background: #fafafa; }
-#graph { flex: 1; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); position: relative; }
+#graph { flex: 1; background: white; position: relative; transition: background 0.3s; }
 #sidebar { width: 300px; min-width: 200px; max-width: 600px; border-left: 1px solid #ddd; padding: 20px; overflow-y: auto; background: white; box-shadow: -2px 0 8px rgba(0,0,0,0.05); position: relative; }
 #resizer { position: absolute; left: 0; top: 0; bottom: 0; width: 5px; cursor: ew-resize; background: transparent; z-index: 10; }
 #resizer:hover { background: #4a90e2; }
 h2 { margin-top: 0; font-size: 1.2em; color: #333; border-bottom: 2px solid #4a90e2; padding-bottom: 8px; }
 h3 { margin-top: 0.5em; margin-bottom: 0.5em; color: #2c3e50; font-size: 1.1em; }
 .link { stroke-opacity: 0.4; }
-#darkmode-toggle { 
-  margin: 15px 0; 
-  padding: 10px 20px; 
+.button-group { display: flex; gap: 8px; margin: 15px 0; }
+.btn { 
+  flex: 1;
+  padding: 10px 15px; 
   background: #4a90e2; 
   color: white; 
   border: none; 
@@ -165,18 +166,24 @@ h3 { margin-top: 0.5em; margin-bottom: 0.5em; color: #2c3e50; font-size: 1.1em; 
   font-size: 0.9em;
   transition: background 0.3s;
 }
-#darkmode-toggle:hover { background: #357abd; }
+.btn:hover { background: #357abd; }
+.btn.secondary { background: #95a5a6; }
+.btn.secondary:hover { background: #7f8c8d; }
+.btn.secondary.active { background: #e74c3c; }
+.btn.secondary.active:hover { background: #c0392b; }
 #stats { color: #666; line-height: 1.8; }
 #details { margin-top: 15px; padding: 15px; background: #f9f9f9; border-radius: 8px; border-left: 4px solid #4a90e2; }
 body.dark { background: #0d1117; color: #c9d1d9; }
-body.dark #graph { background: linear-gradient(135deg, #161b22 0%, #0d1117 100%); }
+body.dark #graph { background: #000; }
 body.dark #sidebar { background: #161b22; border-left-color: #30363d; box-shadow: -2px 0 8px rgba(0,0,0,0.3); }
 body.dark h2 { color: #c9d1d9; border-bottom-color: #58a6ff; }
 body.dark h3 { color: #e6edf3; }
 body.dark #stats { color: #8b949e; }
 body.dark #details { background: #0d1117; border-left-color: #58a6ff; }
-body.dark #darkmode-toggle { background: #21262d; color: #c9d1d9; }
-body.dark #darkmode-toggle:hover { background: #30363d; }
+body.dark .btn { background: #21262d; color: #c9d1d9; }
+body.dark .btn:hover { background: #30363d; }
+body.dark .btn.secondary { background: #30363d; }
+body.dark .btn.secondary:hover { background: #484f58; }
 </style>
 </head>
 <body>
@@ -185,8 +192,10 @@ body.dark #darkmode-toggle:hover { background: #30363d; }
   <div id=\"resizer\"></div>
   <h2>Graph Stats</h2>
   <div id=\"stats\"></div>
-  <button id=\"darkmode-toggle\">Toggle Dark Mode</button>
-  <button id=\"orphan-toggle\" style=\"margin: 10px 0; padding: 10px 20px; background: #95a5a6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9em; width: 100%;\">Hide Orphans</button>
+  <div class=\"button-group\">
+    <button id=\"darkmode-toggle\" class=\"btn\">Dark Mode</button>
+    <button id=\"orphan-toggle\" class=\"btn secondary\">Hide Orphans</button>
+  </div>
   <h2>Search</h2>
   <input type=\"text\" id=\"search\" placeholder=\"Search nodes...\" style=\"width: 100%; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.85em; margin-bottom: 8px;\">
   <div id=\"search-results\" style=\"font-size: 0.8em; color: #666; margin-bottom: 10px;\"></div>
@@ -257,7 +266,7 @@ let orphansHidden = false;
 document.getElementById(\"orphan-toggle\").addEventListener(\"click\", function() {
   orphansHidden = !orphansHidden;
   this.textContent = orphansHidden ? \"Show Orphans\" : \"Hide Orphans\";
-  this.style.background = orphansHidden ? \"#e74c3c\" : \"#95a5a6\";
+  this.classList.toggle(\"active\", orphansHidden);
   node.attr(\"opacity\", d => (orphansHidden && d.degree === 0) ? 0 : 1);
   labels.attr(\"opacity\", d => (orphansHidden && d.degree === 0) ? 0 : 1);
 });

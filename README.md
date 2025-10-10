@@ -8,7 +8,8 @@ Visualize your [Howm](https://github.com/kaorahi/howm) notes as a graph.
 - Clustering reflect the number of connections.
 - Works fully offline after initial setup.
 
-<img width="1752" height="916" alt="123" src="https://github.com/user-attachments/assets/5127cbc1-3301-40ba-b530-d23dce3a1723" />
+<img width="1784" height="914" alt="12" src="https://github.com/user-attachments/assets/e6830d57-2777-4a36-9239-b033ed7727d4" />
+
 
 
 ## Installation

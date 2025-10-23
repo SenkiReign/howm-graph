@@ -5,13 +5,6 @@
 
 ;;; Code:
 
-(setq coding-system-for-read 'utf-8
-      coding-system-for-write 'utf-8
-      default-buffer-file-coding-system 'utf-8
-      locale-coding-system 'utf-8
-      selection-coding-system 'utf-8
-      inhibit-eol-conversion t)
-
 (require 'json)
 (require 'url)
 
